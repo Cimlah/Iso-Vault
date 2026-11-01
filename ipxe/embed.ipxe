@@ -1,0 +1,34 @@
+#!ipxe
+# First stage, built into every loader. Running this instead of the DHCP boot
+# filename is what stops upstream mode looping back into the loader forever.
+
+echo Iso-Vault: configuring network
+set iv_attempt:int32 0
+
+:dhcp
+inc iv_attempt
+dhcp && goto find_server ||
+iseq ${iv_attempt} 3 && goto dhcp_failed ||
+goto dhcp
+
+:find_server
+isset ${proxydhcp/next-server} && set iv_server ${proxydhcp/next-server} && goto fetch ||
+isset ${pxebs/next-server} && set iv_server ${pxebs/next-server} && goto fetch ||
+isset ${next-server} && set iv_server ${next-server} && goto fetch ||
+isset ${66:string} && set iv_server ${66:string} && goto fetch ||
+isset ${proxydhcp/dhcp-server} && set iv_server ${proxydhcp/dhcp-server} && goto fetch ||
+echo Iso-Vault: DHCP worked, but it did not say where the boot server is.
+goto failed
+
+:fetch
+echo Iso-Vault: boot server is ${iv_server}
+chain tftp://${iv_server}/boot.ipxe && exit ||
+echo Iso-Vault: could not fetch boot.ipxe from ${iv_server}
+goto failed
+
+:dhcp_failed
+echo Iso-Vault: no DHCP reply after ${iv_attempt} attempts.
+
+:failed
+prompt --timeout 15000 Press any key for the iPXE shell, or wait to exit... && shell ||
+exit 1

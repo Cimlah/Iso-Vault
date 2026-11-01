@@ -1,0 +1,14 @@
+# Iso-Vault web UI. Boot traffic stays direct on port @@BOOT_PORT@@, so it isn't proxied here.
+# Add your own certificate paths, or use certbot, to serve this over HTTPS.
+server {
+    listen 80;
+    server_name @@HOSTNAME@@;
+
+    location / {
+        proxy_pass http://@@UPSTREAM@@;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}

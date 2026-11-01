@@ -1,0 +1,25 @@
+# Runtime data created by install.sh and compose
+/.env
+/isos/
+/data/
+/reverse-proxy/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# Node
+node_modules/
+web/.next/
+web/next-env.d.ts
+web/test-results/
+web/playwright-report/
+*.tsbuildinfo
+
+# E2E downloads and logs
+tests/e2e/.cache/
+tests/e2e/logs/
+
+.DS_Store

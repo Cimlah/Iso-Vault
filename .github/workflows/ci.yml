@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Python, installer and web tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: pip install pytest
+      - run: shellcheck install.sh tests/e2e/client.sh
+      - run: python -m pytest tests/unit tests/installer
+      - run: npm ci
+        working-directory: web
+      - run: npm run typecheck
+        working-directory: web
+      - run: npm test
+        working-directory: web
+
+  integration:
+    name: Container tests on ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: pip install pytest
+      - run: docker build -t iso-vault:dev .
+      - run: python -m pytest tests/integration -s
+
+  boot:
+    name: Boot VMs on ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: docker build -t iso-vault:dev .
+      - run: python tests/e2e/fetch_alpine.py
+      - run: python tests/e2e/run_e2e.py --jobs 2 --timeout 1200
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: boot-logs-${{ matrix.runner }}
+          path: tests/e2e/logs/

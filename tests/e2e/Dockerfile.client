@@ -1,0 +1,16 @@
+# Debian's and Fedora's x64 OVMF have no network stack, so that firmware comes from Ubuntu.
+FROM ubuntu:24.04 AS firmware
+RUN apt-get update && apt-get install -y --no-install-recommends ovmf
+
+# A QEMU machine that network-boots, in a container so it can join the test's Docker network.
+FROM debian:trixie-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        iproute2 \
+        ipxe-qemu \
+        qemu-efi-aarch64 \
+        qemu-system-arm \
+        qemu-system-x86 \
+        seabios
+COPY --from=firmware /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_VARS_4M.fd /firmware/
+COPY client.sh /client.sh
+ENTRYPOINT ["sh", "/client.sh"]

@@ -1,0 +1,19 @@
+name = "ubuntu-casper"
+label = "Ubuntu live"
+priority = 50
+
+[detect]
+any = ["casper/vmlinuz*", "casper/hwe-vmlinuz*"]
+
+[boot]
+method = "linux"
+kernel = ["casper/vmlinuz", "casper/vmlinuz.efi", "casper/hwe-vmlinuz", "casper/vmlinuz*"]
+initrd = ["casper/initrd", "casper/initrd.lz", "casper/initrd.gz", "casper/hwe-initrd", "casper/initrd*"]
+
+[[boot.variant]]
+requires = ["nfs"]
+args = "boot=casper netboot=nfs nfsroot={server}:{nfs_path} ip=dhcp"
+
+[[boot.variant]]
+args = "boot=casper netboot=url url={iso_url} ip=dhcp"
+warning = "NFS isn't available, so the whole ISO loads into RAM, in a space limited to half of it. The device needs at least {ram_gib} GiB of RAM."

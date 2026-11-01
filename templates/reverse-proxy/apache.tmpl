@@ -1,0 +1,8 @@
+# Iso-Vault web UI. Boot traffic stays direct on port @@BOOT_PORT@@, so it isn't proxied here.
+# Needs mod_proxy and mod_proxy_http. Add your certificate settings to serve this over HTTPS.
+<VirtualHost *:80>
+    ServerName @@HOSTNAME@@
+    ProxyPreserveHost On
+    ProxyPass / http://@@UPSTREAM@@/
+    ProxyPassReverse / http://@@UPSTREAM@@/
+</VirtualHost>
