@@ -42,6 +42,7 @@ class Config:
     scan_interval: float = 5.0
     stable_seconds: float = 10.0
     iso_dir: Path = Path("/isos")
+    drivers_dir: Path = Path("/drivers")
     data_dir: Path = Path("/data")
     run_dir: Path = Path("/run/isovault")
     app_dir: Path = Path("/opt/isovault")

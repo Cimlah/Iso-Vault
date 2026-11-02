@@ -18,10 +18,12 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 from . import __version__, ipxe
 from .config import Config, Secrets
+from .drivers import SUBFOLDERS, driver_commands, find_drivers
 from .netboot import DebianNetboot, NetbootError, find_suite
 from .network import NetInfo
-from .profiles import BootContext, Tree, build_linux_plan, ram_gib
+from .profiles import X86_64, BootContext, Tree, build_linux_plan, ram_gib
 from .scanner import READY, Entry, Scanner
+from .services import render
 from .state import State, StateError, normalize_mac
 
 log = logging.getLogger("isovault.api")
@@ -153,7 +155,8 @@ def _render_boot(runtime: Runtime, client: ipxe.Client, entry: Entry) -> str:
         wim = tree.find("sources/boot.wim")
         if not (bcd and sdi and wim):
             return ipxe.error_script("This Windows ISO is missing its boot files.")
-        return ipxe.render_windows(client, base, entry.id, entry.name, file_base, bcd, sdi, wim)
+        drivers = find_drivers(runtime.config.drivers_dir, client.arch)
+        return ipxe.render_windows(client, base, entry.id, entry.name, file_base, bcd, sdi, wim, sorted(drivers.files))
 
     if profile.method == "debian-netboot":
         suite = find_suite(tree)
@@ -187,20 +190,40 @@ def _render_boot(runtime: Runtime, client: ipxe.Client, entry: Entry) -> str:
     return ipxe.render_linux(client, entry.name, file_base, plan)
 
 
-def render_windows_file(runtime: Runtime, iso_id: str, name: str) -> str | None:
+def render_windows_file(runtime: Runtime, iso_id: str, name: str, arch: str = X86_64) -> str | None:
     entry = runtime.scanner.get(iso_id)
     if entry is None or entry.status != READY or name not in ("winpeshl.ini", "startup.bat"):
         return None
     if entry.profile is None or entry.profile.method != "windows":
         return None
-    text = (runtime.config.templates_dir / "windows" / name).read_text()
-    text = (
-        text.replace("@@SERVER_IP@@", runtime.net.ip)
-        .replace("@@ISO_ID@@", entry.id)
-        .replace("@@SMB_PASSWORD@@", runtime.secrets.smb_password)
+    drivers = find_drivers(runtime.config.drivers_dir, arch)
+    text = render(
+        (runtime.config.templates_dir / "windows" / name).read_text(),
+        {
+            "SERVER_IP": runtime.net.ip,
+            "ISO_ID": entry.id,
+            "SMB_PASSWORD": runtime.secrets.smb_password,
+            "DRIVER_COMMANDS": driver_commands(drivers.infs),
+            "DRIVER_FOLDER": SUBFOLDERS[arch],
+        },
     )
     # Windows batch files need CRLF line endings.
     return text.replace("\r\n", "\n").replace("\n", "\r\n")
+
+
+def read_driver_file(runtime: Runtime, folder: str, name: str) -> bytes | None:
+    """Served by the core, because nginx couldn't read files copied with private permissions."""
+    arch = next((a for a, subfolder in SUBFOLDERS.items() if subfolder == folder), None)
+    if arch is None:
+        return None
+    # Looked up in a fresh scan, so a request can only ever reach a file that scan listed.
+    path = find_drivers(runtime.config.drivers_dir, arch).files.get(name)
+    if path is None:
+        return None
+    try:
+        return path.read_bytes()
+    except OSError:
+        return None
 
 
 def describe_entry(runtime: Runtime, entry: Entry) -> dict:
@@ -210,6 +233,10 @@ def describe_entry(runtime: Runtime, entry: Entry) -> dict:
         warnings.append(reason)
     if entry.status == READY and entry.profile is not None and entry.profile.method == "linux":
         warnings.extend(_variant_warnings(runtime, entry))
+    drivers: set[str] = set()
+    if entry.status == READY and entry.profile is not None and entry.profile.method == "windows":
+        for arch in entry.archs or SUBFOLDERS:
+            drivers.update(find_drivers(runtime.config.drivers_dir, arch).infs)
     return {
         "id": entry.id,
         "name": entry.name,
@@ -224,6 +251,7 @@ def describe_entry(runtime: Runtime, entry: Entry) -> dict:
         "archs": list(entry.archs),
         "bootable": entry.status == READY and reason is None,
         "warnings": warnings,
+        "drivers": sorted(drivers),
     }
 
 
@@ -238,6 +266,7 @@ def _variant_warnings(runtime: Runtime, entry: Entry) -> list[str]:
 
 def status_payload(runtime: Runtime) -> dict:
     config = runtime.config
+    driver_problems = [p for arch in SUBFOLDERS for p in find_drivers(config.drivers_dir, arch).problems]
     return {
         "version": __version__,
         "dhcp_mode": runtime.effective_mode,
@@ -248,7 +277,7 @@ def status_payload(runtime: Runtime) -> dict:
         "ui_port": config.ui_port,
         "features": sorted(runtime.features),
         "services": runtime.service_status(),
-        "warnings": list(runtime.warnings),
+        "warnings": list(runtime.warnings) + driver_problems,
         "upstream": {
             "next_server": runtime.net.ip,
             "filenames": {
@@ -343,11 +372,17 @@ class Handler(BaseHTTPRequestHandler):
         elif len(parts) == 2 and parts[0] == "boot":
             self._text(boot_script(self.runtime, client, parts[1], ip, "pin" in query))
         elif len(parts) == 3 and parts[0] == "windows":
-            content = render_windows_file(self.runtime, parts[1], parts[2])
+            content = render_windows_file(self.runtime, parts[1], parts[2], client.arch)
             if content is None:
                 self._error(404, "Not found.")
             else:
                 self._text(content)
+        elif len(parts) == 3 and parts[0] == "drivers":
+            data = read_driver_file(self.runtime, parts[1], parts[2])
+            if data is None:
+                self._error(404, "Not found.")
+            else:
+                self._send(200, data, "application/octet-stream")
         else:
             self._error(404, "Not found.")
 

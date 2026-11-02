@@ -1,8 +1,8 @@
 # Compatibility
 
-An OS is only listed as tested here after it has actually passed. These results come from `tests/e2e/`, which boots QEMU virtual machines from Iso-Vault over a private network. A pass needs the expected text on the VM's console and, where it applies, proof in the server's log that the OS's files were really served.
+An OS is only listed as tested here after it has actually passed. Most of these results come from `tests/e2e/`, which boots QEMU virtual machines from Iso-Vault over a private network. A pass needs the expected text on the VM's console and, where it applies, proof in the server's log that the OS's files were really served.
 
-**None of this was run on physical hardware or a real LAN.** See the [checklist](troubleshooting.md#checking-a-new-install-on-real-hardware) for checking your own setup.
+Very little has been run on physical hardware yet, so see [below](#physical-hardware) for what has. The [checklist](troubleshooting.md#checking-a-new-install-on-real-hardware) covers checking your own setup.
 
 Last run: November 2026.
 
@@ -41,15 +41,26 @@ The BIOS client uses QEMU's iPXE ROM, not a vendor PXE ROM such as Intel's. In `
 
 The generic virtual CD recipe was tested by forcing it onto Alpine's ISO. On x64 BIOS it reached ISOLINUX, and on x64 UEFI it reached GRUB. On ARM64 UEFI it continued to the kernel, then stopped with `Mounting boot media failed`, which is the [known limit](../README.md#what-boots) of this recipe.
 
+## Physical hardware
+
+One physical x64 PC, booting from a Raspberry Pi 4 on a real LAN:
+
+| OS | Result |
+|---|---|
+| Ubuntu | Booted |
+| Windows 10 22H2 | Windows PE started, loaded a real Realtek driver (`rt640x64`) from the drivers folder, connected to the Samba share and started Windows Setup |
+
+The Windows test stopped once Setup had started, because going further would have erased that PC's disk. So copying Windows from the share to a disk, and booting the result, haven't been tested.
+
 ## Not tested yet
 
 These are expected to work, but nothing has proved it.
 
 | What | Why it matters |
 |---|---|
-| **Windows, on any architecture** | No Windows ISO was available to test with, and the VMs use a network card that Windows PE has no driver for. The boot script, the startup files and the Samba share have been tested individually, including with a real SMB client, but Windows PE itself has never booted from this. Treat Windows support as unproven until you've tried it |
-| **Windows on ARM** | As above, and [reports for wimboot on ARM are mixed](https://github.com/ipxe/wimboot/issues/4) |
-| Physical hardware | Real network cards and firmware vary far more than VMs |
+| **A full Windows install, on any architecture** | Setup has started on one physical PC, but no install has been run to the end. The VMs can't help, because they use a network card that Windows PE has no driver for |
+| **Windows on ARM** | It has never been booted from Iso-Vault, and [reports for wimboot on ARM are mixed](https://github.com/ipxe/wimboot/issues/4) |
+| Other physical hardware | Real network cards and firmware vary far more than VMs |
 | Real routers in `upstream` mode | The tests use dnsmasq as the router. The [router examples](upstream-dhcp.md) other than dnsmasq haven't been run |
 | Routers that only set option 66 | The first stage looks for it, but the tests always set next-server |
 | UEFI HTTP Boot | The DHCP replies are configured, but no client has booted this way |

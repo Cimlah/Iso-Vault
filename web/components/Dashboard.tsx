@@ -194,6 +194,7 @@ function IsoRow({ iso }: { iso: Iso }) {
             {warning}
           </div>
         ))}
+        {iso.drivers.length > 0 && <div className="detail">Loads network drivers: {iso.drivers.join(", ")}</div>}
       </td>
       <td data-label="OS family">{iso.profile_label ?? "–"}</td>
       <td data-label="Architecture">{iso.status === "ready" ? formatArchs(iso.archs) : "–"}</td>

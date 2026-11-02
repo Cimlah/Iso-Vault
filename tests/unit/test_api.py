@@ -243,6 +243,64 @@ def test_windows_files_arent_served_for_other_families(tmp_path, alpine):
     assert api.render_windows_file(make_runtime(tmp_path, [alpine]), "alpine-1", "startup.bat") is None
 
 
+def test_windows_boot_injects_the_drivers_for_its_architecture(all_profiles, tmp_path):
+    windows = entry(all_profiles, tmp_path, "win-1", "windows", WINDOWS_FILES)
+    drivers = make_tree(tmp_path / "drivers", ["x64/rt/rt25.inf", "x64/rt/rt25.sys", "arm64/qc/qc.inf"])
+    runtime = make_runtime(tmp_path, [windows], drivers_dir=drivers)
+    script = api.boot_script(runtime, UEFI, "win-1", "", False)
+    assert "initrd --name rt25.inf http://10.0.0.5:8080/ipxe/drivers/x64/rt25.inf rt25.inf" in script
+    assert "initrd --name rt25.sys" in script
+    assert "qc.inf" not in script
+
+
+def test_windows_startup_script_loads_the_drivers(all_profiles, tmp_path):
+    windows = entry(all_profiles, tmp_path, "win-1", "windows", WINDOWS_FILES)
+    drivers = make_tree(tmp_path / "drivers", ["x64/rt/rt25.inf", "arm64/qc/qc.inf"])
+    runtime = make_runtime(tmp_path, [windows], drivers_dir=drivers)
+    text = api.render_windows_file(runtime, "win-1", "startup.bat", X86_64)
+    assert "drvload X:\\Windows\\System32\\rt25.inf" in text
+    assert "qc.inf" not in text
+    assert "drivers\\x64" in text
+    arm = api.render_windows_file(runtime, "win-1", "startup.bat", ARM64)
+    assert "drvload X:\\Windows\\System32\\qc.inf" in arm
+    assert "drivers\\arm64" in arm
+
+
+def test_windows_without_drivers_still_boots(all_profiles, tmp_path):
+    windows = entry(all_profiles, tmp_path, "win-1", "windows", WINDOWS_FILES)
+    runtime = make_runtime(tmp_path, [windows], drivers_dir=tmp_path / "missing")
+    assert "kernel " in api.boot_script(runtime, UEFI, "win-1", "", False)
+    text = api.render_windows_file(runtime, "win-1", "startup.bat")
+    assert "drvload" not in text
+    assert "@@" not in text
+
+
+def test_driver_files_are_served_only_from_the_scan(tmp_path):
+    drivers = make_tree(tmp_path / "drivers", [("x64/rt/rt25.sys", "binary"), ("x64/rt/rt25.inf", "inf"), "x64/rt/setup.exe"])
+    (tmp_path / "secrets.json").write_text("private")
+    runtime = make_runtime(tmp_path, [], drivers_dir=drivers)
+    assert api.read_driver_file(runtime, "x64", "rt25.sys") == b"binary"
+    assert api.read_driver_file(runtime, "x64", "setup.exe") is None
+    assert api.read_driver_file(runtime, "arm64", "rt25.sys") is None
+    assert api.read_driver_file(runtime, "nope", "rt25.sys") is None
+    for name in ("../../secrets.json", "..", "rt/rt25.sys", "/etc/passwd"):
+        assert api.read_driver_file(runtime, "x64", name) is None
+
+
+def test_windows_isos_list_their_drivers_and_others_dont(all_profiles, tmp_path, alpine):
+    windows = entry(all_profiles, tmp_path, "win-1", "windows", WINDOWS_FILES)
+    drivers = make_tree(tmp_path / "drivers", ["x64/rt/rt25.inf", "arm64/qc/qc.inf"])
+    runtime = make_runtime(tmp_path, [windows, alpine], drivers_dir=drivers)
+    assert api.describe_entry(runtime, windows)["drivers"] == ["rt25.inf"]
+    assert api.describe_entry(runtime, alpine)["drivers"] == []
+
+
+def test_skipped_drivers_are_reported_in_the_status(tmp_path):
+    drivers = make_tree(tmp_path / "drivers", ["x64/bad/bad.inf", "x64/bad/not ok.sys"])
+    payload = api.status_payload(make_runtime(tmp_path, [], drivers_dir=drivers))
+    assert any("x64/bad" in warning for warning in payload["warnings"])
+
+
 DEBIAN_FILES = [
     (".disk/info", "Debian GNU/Linux 13"),
     "install.amd/vmlinuz",

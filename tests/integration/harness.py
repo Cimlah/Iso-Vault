@@ -17,6 +17,9 @@ ROOT = Path(__file__).resolve().parents[2]
 IMAGE = os.environ.get("ISO_VAULT_IMAGE", "iso-vault:dev")
 HELPER_IMAGE = "iso-vault-it-helper:dev"
 MAC = "52:54:00:aa:bb:cc"
+# FILE_READ_DATA, FILE_READ_ATTRIBUTES and FILE_EXECUTE, which Windows asks for to run a program.
+SMB_RUN_ACCESS = 0x01 | 0x80 | 0x20
+SMB_WRITE_ACCESS = 0x02
 
 # Minimal fake ISOs: just enough for each family's detection and boot script.
 ISO_TREES = {
@@ -161,6 +164,26 @@ class Stack:
         payload = json.dumps(body) if body is not None else ""
         result = json.loads(self.exec_server("python3", "-c", script, method, path, payload).stdout)
         return result["status"], result["body"]
+
+    def smb_password(self) -> str:
+        return self.exec_server(
+            "python3", "-c", "import json;print(json.load(open('/data/secrets.json'))['SMB_PASSWORD'])"
+        ).stdout.strip()
+
+    def smb_open(self, path: str, access: int = SMB_RUN_ACCESS, check: bool = True):
+        """Opens a file on the share with exact access rights, which smbclient can't ask for."""
+        script = (
+            "import sys\n"
+            "from impacket.smbconnection import SMBConnection\n"
+            "server, password, path, access = sys.argv[1:]\n"
+            "smb = SMBConnection(server, server)\n"
+            "smb.login('isovault', password)\n"
+            "tree = smb.connectTree('isovault')\n"
+            "smb.closeFile(tree, smb.openFile(tree, path, desiredAccess=int(access)))\n"
+        )
+        return self.exec_helper(
+            "python3", "-c", script, self.server_ip, self.smb_password(), path, str(access), check=check
+        )
 
     def status(self) -> dict:
         return self.api("/api/status")[1]

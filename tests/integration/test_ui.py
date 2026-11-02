@@ -8,8 +8,8 @@ from harness import ROOT, docker
 PLAYWRIGHT_IMAGE = "mcr.microsoft.com/playwright:v1.64.1-noble"
 
 
-def test_dashboard_in_a_real_browser(stack):
-    stack.start(ADMIN_PASSWORD="test-admin-password")
+def test_dashboard_in_a_real_browser(driver_volume, stack):
+    stack.start("-v", f"{driver_volume}:/drivers:ro", ADMIN_PASSWORD="test-admin-password")
     stack.wait_for_all_isos()
 
     runner = f"iv-it-playwright-{stack.id}"

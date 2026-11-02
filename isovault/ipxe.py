@@ -11,6 +11,7 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Sequence
 
+from .drivers import SUBFOLDERS
 from .profiles import ARM64, X86_64, BootPlan
 
 UNSAFE_LABEL_CHARS = re.compile(r"[^A-Za-z0-9 ._()+,:?/\-]")
@@ -220,9 +221,11 @@ def render_windows(
     bcd: str,
     boot_sdi: str,
     boot_wim: str,
+    drivers: Sequence[str] = (),
 ) -> str:
     loader = "wimboot.arm64" if client.arch == ARM64 else "wimboot"
     scripts = f"{base_url}/ipxe/windows/{iso_id}"
+    driver_base = f"{base_url}/ipxe/drivers/{SUBFOLDERS[client.arch]}"
     return "\n".join(
         [
             "#!ipxe",
@@ -230,7 +233,8 @@ def render_windows(
             f"echo Iso-Vault: booting {sanitize_label(label)}",
             f"kernel {base_url}/loaders/{loader} || goto failed",
             f"initrd --name winpeshl.ini {scripts}/winpeshl.ini winpeshl.ini || goto failed",
-            f"initrd --name startup.bat {scripts}/startup.bat startup.bat || goto failed",
+            f"initrd --name startup.bat {scripts}/startup.bat?arch={client.arch} startup.bat || goto failed",
+            *[f"initrd --name {name} {driver_base}/{name} {name} || goto failed" for name in drivers],
             f"initrd --name BCD {file_base}/{bcd} BCD || goto failed",
             f"initrd --name boot.sdi {file_base}/{boot_sdi} boot.sdi || goto failed",
             f"initrd --name boot.wim {file_base}/{boot_wim} boot.wim || goto failed",

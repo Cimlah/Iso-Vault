@@ -2,6 +2,7 @@
 /.env
 /isos/
 /data/
+/drivers/
 /reverse-proxy/
 
 # Python

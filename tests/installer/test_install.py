@@ -209,6 +209,12 @@ def test_env_file_is_private_and_smb_password_is_safe(installer):
     assert installer.env()["SMB_PASSWORD"].isalnum()
 
 
+def test_creates_the_drivers_folders(installer):
+    assert installer.run("--yes").returncode == 0
+    assert (installer.home / "drivers" / "x64").is_dir()
+    assert (installer.home / "drivers" / "arm64").is_dir()
+
+
 def test_summary_shows_how_to_reach_the_ui(installer):
     result = installer.run("--yes")
     assert "http://192.168.1.10:8081" in result.stdout

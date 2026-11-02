@@ -40,8 +40,43 @@ An ISO also won't be listed if it's for a different architecture. The menu says 
 
 ### Windows
 
-- **`Could not connect to the installer share`:** Windows PE may have no driver for this network card, which is common on new hardware. Otherwise, check that TCP port 445 is open on the server.
-- **The Windows entry is missing or says it can't boot:** port 445 is in use on the server, usually by Samba on a NAS. See below.
+**`No network adapter is listed above`:** Windows PE has no driver for this network card, which is common on newer hardware. To add one:
+
+1. **Find out which card it is.** At the command prompt on the device, this lists the devices with no driver. Look for a line starting with `PCI\VEN_`, where `VEN_8086` is Intel and `VEN_10EC` is Realtek:
+
+   ```
+   wmic path Win32_PnPEntity where "ConfigManagerErrorCode<>0" get Name,DeviceID
+   ```
+
+2. **Get the driver.** Download the card's Windows driver, usually from your motherboard's support page, and unpack it until you can see its `.inf`, `.sys` and `.cat` files. An installer `.exe` won't work directly, but 7-Zip can often open one.
+3. **Copy it to the server.** Put that folder under `drivers/x64`, or `drivers/arm64` for ARM64 devices, for example `drivers/x64/realtek/`.
+4. **Boot the device again.** You don't need to restart Iso-Vault. The web UI shows `Loads network drivers:` under the Windows ISO.
+
+A driver is only used if all of these are true, and the web UI says why if one is skipped:
+
+- Its files sit directly beside the `.inf`, because subfolders of a driver aren't included. If a download has folders for several Windows versions, copy only the one matching your ISO.
+- Its file names use only letters, digits, dots, dashes and underscores, and are up to 31 characters long.
+- No other driver has a file with the same name.
+- The total across all drivers stays within 40 files, so keep only the ones you need.
+
+The installed Windows may need the same driver after Setup finishes, so keep a copy to hand.
+
+If you need to get past this straight away, you can also load a driver from a USB stick at the command prompt, then try again:
+
+```
+drvload E:\path\to\driver.inf
+startup.bat
+```
+
+**`Could not connect` with an adapter listed:** the error shown above the network settings says why.
+
+| Error | What it means | What to do |
+|---|---|---|
+| 53 | Can't reach the share | Check the device has an IP address, and that TCP port 445 is open on the server |
+| 67 | Share not found | Check `docker logs iso-vault` for Samba errors |
+| 86 or 1326 | Login rejected | This is likely a bug, so please report it |
+
+**The Windows entry is missing or says it can't boot:** port 445 is in use on the server, usually by Samba on a NAS. See below.
 
 ## A port is already in use
 
@@ -95,4 +130,4 @@ The automated tests boot VMs on a private network, so they can't exercise your r
 2. [ ] **Boot an ISO.** Copy a small ISO, such as Alpine's, into the `isos` folder, then boot it on that device.
 3. [ ] **The DHCP safety check.** With your router's DHCP on, set `DHCP_MODE=server` and run `docker compose up -d`. The web UI should warn that another DHCP server is active, and other devices on the network should keep working. Set it back to `proxy` afterwards.
 4. [ ] **Your reverse proxy,** if you use one. Log in through its hostname, pin an ISO to a device, and check the device boots it.
-5. [ ] **Windows,** if you use it. This has never been tested end to end, so try it on a physical device. Copy a Windows ISO into the `isos` folder, boot it, and check that Windows Setup starts. If it stops with `Could not connect to the installer share`, [see above](#windows).
+5. [ ] **Windows,** if you use it. Copy a Windows ISO into the `isos` folder, boot it on a physical device, and check that Windows Setup starts. If it stops at `Could not connect`, [see above](#windows). A full install has never been tested, so finish one if you have a disk you can erase.

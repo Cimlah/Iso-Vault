@@ -221,6 +221,13 @@ td .note.error {
   color: var(--danger);
 }
 
+td .detail {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

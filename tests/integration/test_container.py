@@ -1,6 +1,5 @@
 """Runs the real image, and checks it from a separate device on the same network."""
 
-import hashlib
 import time
 
 import pytest
@@ -294,14 +293,14 @@ def test_samba_share_serves_windows_files_read_only_with_a_login(stack):
     isos = stack.wait_for_all_isos()
     iso_id = isos["windows-test.iso"]["id"]
     assert "smb" in stack.status()["features"]
-    password = stack.exec_server(
-        "python3", "-c", "import json;print(json.load(open('/data/secrets.json'))['SMB_PASSWORD'])"
-    ).stdout.strip()
     share = f"//{stack.server_ip}/isovault"
-    login = ["-U", f"isovault%{password}", "-m", "SMB3"]
+    login = ["-U", f"isovault%{stack.smb_password()}", "-m", "SMB3"]
 
     listing = stack.exec_helper("smbclient", share, *login, "-c", f"cd {iso_id}; ls").stdout
     assert "setup.exe" in listing
+    # Without this, Windows says "Access is denied" when it starts Setup.
+    stack.smb_open(f"{iso_id}\\setup.exe")
+    assert stack.smb_open(f"{iso_id}\\setup.exe", harness.SMB_WRITE_ACCESS, check=False).returncode != 0
 
     stack.exec_helper("sh", "-c", "echo x > /tmp/upload.txt")
     write = stack.exec_helper("smbclient", share, *login, "-c", f"cd {iso_id}; put /tmp/upload.txt upload.txt", check=False)
@@ -332,6 +331,51 @@ def test_windows_boot_script_and_startup_files(stack):
     url = stack.boot_url(f"/ipxe/windows/{iso_id}/startup.bat")
     carriage_returns = stack.exec_helper("sh", "-c", f"curl -s {url} | tr -cd '\\r' | wc -c").stdout
     assert int(carriage_returns) > 5
+
+
+def test_windows_drivers_reach_the_boot_and_startup_scripts(driver_volume, stack):
+    stack.start("-v", f"{driver_volume}:/drivers:ro")
+    isos = stack.wait_for_all_isos()
+    windows = isos["windows-test.iso"]
+    assert windows["drivers"] == ["rt25.inf"]
+
+    script = stack.fetch_boot(windows["id"])
+    for name in ("rt25.inf", "rt25.sys", "rt25.cat"):
+        assert f"initrd --name {name} {stack.boot_url(f'/ipxe/drivers/x64/{name}')} {name}" in script
+    assert "README" not in script and "setup.exe" not in script and "ok.inf" not in script
+    # Everything the device is told to fetch has to really be there.
+    for word in script.split():
+        if word.startswith("http"):
+            assert stack.curl("-o", "/dev/null", "-w", "%{http_code}", word).stdout == "200", word
+
+    startup = stack.curl(stack.boot_url(f"/ipxe/windows/{windows['id']}/startup.bat?arch=x86_64")).stdout
+    assert "drvload X:\\Windows\\System32\\rt25.inf" in startup
+    assert "wpeutil InitializeNetwork" in startup
+    arm = stack.curl(stack.boot_url(f"/ipxe/windows/{windows['id']}/startup.bat?arch=arm64")).stdout
+    assert "qc.inf" in arm and "rt25.inf" not in arm
+
+
+def test_windows_driver_files_are_served_exactly(driver_volume, stack):
+    stack.start("-v", f"{driver_volume}:/drivers:ro")
+    # This file is private to root, which nginx's unprivileged workers couldn't have read.
+    assert stack.curl(stack.boot_url("/ipxe/drivers/x64/rt25.sys")).stdout == "sys-bytes"
+    assert stack.curl(stack.boot_url("/ipxe/drivers/arm64/qc.inf")).stdout == "arm-inf"
+    for path in (
+        "/ipxe/drivers/x64/qc.inf",
+        "/ipxe/drivers/x64/setup.exe",
+        "/ipxe/drivers/nope/rt25.sys",
+        "/ipxe/drivers/x64/..%2f..%2fsecrets.json",
+        "/ipxe/drivers/x64/..%2fmessy%2fok.inf",
+        "/ipxe/drivers/x64/../../../data/secrets.json",
+    ):
+        assert stack.http_status(path) in ("400", "404"), path
+
+
+def test_a_skipped_driver_is_explained_in_the_status(driver_volume, stack):
+    stack.start("-v", f"{driver_volume}:/drivers:ro")
+    warnings = stack.status()["warnings"]
+    assert any("x64/messy" in warning and "not ok.sys" in warning for warning in warnings)
+    assert not any("x64/realtek" in warning for warning in warnings)
 
 
 def test_ports_in_use_turn_off_only_the_shares(stack):
@@ -440,14 +484,12 @@ def test_extracted_isos_also_work_over_nfs_and_samba(stack):
         umount /mnt/nfs
     """
     assert stack.exec_helper("sh", "-c", script).stdout == "squashfs"
-    password = stack.exec_server(
-        "python3", "-c", "import json;print(json.load(open('/data/secrets.json'))['SMB_PASSWORD'])"
-    ).stdout.strip()
     windows = isos["windows-test.iso"]["id"]
     listing = stack.exec_helper(
-        "smbclient", f"//{stack.server_ip}/isovault", "-U", f"isovault%{password}", "-m", "SMB3", "-c", f"cd {windows}; ls"
+        "smbclient", f"//{stack.server_ip}/isovault", "-U", f"isovault%{stack.smb_password()}", "-m", "SMB3", "-c", f"cd {windows}; ls"
     ).stdout
     assert "setup.exe" in listing
+    stack.smb_open(f"{windows}\\setup.exe")
 
 
 def test_custom_profile_from_the_data_folder_is_used(private_stack, private_isos):

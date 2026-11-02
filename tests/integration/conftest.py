@@ -45,3 +45,27 @@ def private_stack(private_isos):
     instance = harness.Stack(private_isos)
     yield instance
     instance.close()
+
+
+@pytest.fixture
+def driver_volume():
+    """Driver files laid out the way a download usually unpacks, with private permissions."""
+    volume = f"iv-it-drivers-{uuid.uuid4().hex[:8]}"
+    harness.docker("volume", "create", volume)
+    harness.on_volume(
+        volume,
+        """
+        mkdir -p x64/realtek arm64/qualcomm x64/messy
+        printf inf-text > x64/realtek/rt25.inf
+        printf sys-bytes > x64/realtek/rt25.sys
+        printf cat-bytes > x64/realtek/rt25.cat
+        printf no > x64/realtek/README.txt
+        printf no > x64/realtek/setup.exe
+        chmod 600 x64/realtek/rt25.sys
+        printf arm-inf > arm64/qualcomm/qc.inf
+        printf a > x64/messy/ok.inf
+        printf b > "x64/messy/not ok.sys"
+        """,
+    )
+    yield volume
+    harness.remove_volume(volume)

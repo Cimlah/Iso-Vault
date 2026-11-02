@@ -181,7 +181,7 @@ prepare_dir() {
         say "Downloading compose.yml"
         curl -fsSL "$REPO_RAW/compose.yml" -o compose.yml
     fi
-    mkdir -p isos data reverse-proxy
+    mkdir -p isos data reverse-proxy drivers/x64 drivers/arm64
 }
 
 # Reads one setting from .env, without sourcing it as a script.

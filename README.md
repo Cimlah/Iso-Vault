@@ -74,6 +74,12 @@ Devices appear in the web UI after they boot once, or you can add one by MAC add
 
 Pinned devices show a 5-second prompt, so you can still get to the menu.
 
+## Windows network drivers
+
+Windows Setup downloads its files over the network, so its installer needs a driver for the device's network card. Stock Windows ISOs often don't have one for newer cards.
+
+If yours doesn't, unpack the card's Windows driver into its own folder under `drivers/x64` (or `drivers/arm64`), and boot again. There's no need to restart anything. [docs/troubleshooting.md](docs/troubleshooting.md#windows) has the details.
+
 ## Using a reverse proxy
 
 If Caddy, nginx, Traefik, Apache or HAProxy already runs on the server, the installer offers to put the web UI behind it. Caddy on the host can be set up for you, and the others get a ready-to-use config file. Iso-Vault never uses ports 80 or 443, so it won't collide with your proxy.
@@ -88,7 +94,7 @@ Only the web UI goes through the proxy. Devices always boot directly from the se
 - **A reverse proxy only covers the web UI.** Devices must be able to reach the server's LAN address on the boot port.
 - **The web UI needs its own hostname behind a proxy.** Sub-paths such as `/isovault` won't work.
 - **ARM64 devices need UEFI PXE.** A Raspberry Pi needs UEFI firmware, and U-Boot boards are best effort.
-- **Windows needs a network driver in its installer.** Stock Windows ISOs may not include one for newer network cards.
+- **Windows needs a network driver in its installer.** Stock Windows ISOs often don't include one for newer network cards, so you may need to [add it](#windows-network-drivers).
 - **Windows on ARM is experimental.** It hasn't been tested, and [reports for wimboot on ARM are mixed](https://github.com/ipxe/wimboot/issues/4).
 - **Trusted networks only.** The boot port and direct UI port use plain HTTP, and the boot port has no login. Devices on your network can read the ISOs and the read-only Samba password, because they need them to boot. Never expose these ports to the internet.
 

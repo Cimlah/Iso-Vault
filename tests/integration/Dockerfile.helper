@@ -1,4 +1,4 @@
 # Stands in for a device on the LAN, with clients for everything Iso-Vault serves.
 # It also builds the small test ISOs with xorriso.
 FROM alpine:3.24
-RUN apk add --no-cache curl iproute2 nfs-utils samba-client xorriso python3
+RUN apk add --no-cache curl iproute2 nfs-utils samba-client xorriso python3 py3-impacket

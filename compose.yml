@@ -15,6 +15,7 @@ services:
         required: false
     volumes:
       - ${ISO_DIR:-./isos}:/isos:ro
+      - ${DRIVERS_DIR:-./drivers}:/drivers:ro
       - ${DATA_DIR:-./data}:/data
     healthcheck:
       test: ["CMD", "python3", "-m", "isovault", "healthcheck"]

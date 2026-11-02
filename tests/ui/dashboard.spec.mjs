@@ -48,6 +48,13 @@ test("lists ISOs with their family, architecture and warnings", async ({ page })
   await expect(generic).toContainText("isn't a recognised OS family");
 });
 
+test("shows which network drivers a Windows ISO will load, and why one was skipped", async ({ page }) => {
+  await logIn(page);
+  await expect(page.getByRole("row", { name: /windows-test\.iso/ })).toContainText("Loads network drivers: rt25.inf");
+  await expect(page.getByRole("row", { name: /alpine-test\.iso/ }).first()).not.toContainText("Loads network drivers");
+  await expect(page.getByRole("status").filter({ hasText: "x64/messy" })).toContainText("not ok.sys");
+});
+
 test("shows a device that booted, and pins it through to the boot menu", async ({ page, request }) => {
   await menuFor(request, SEEN_MAC);
   await logIn(page);

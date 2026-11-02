@@ -3,6 +3,7 @@
 .env
 isos
 data
+drivers
 reverse-proxy
 docs
 tests

@@ -14,6 +14,7 @@ export interface Iso {
   archs: string[];
   bootable: boolean;
   warnings: string[];
+  drivers: string[];
 }
 
 export interface ServiceStatus {
