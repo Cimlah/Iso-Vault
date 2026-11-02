@@ -20,7 +20,7 @@ jobs:
           python-version: "3.14"
       - run: docker build -t iso-vault:dev .
       - run: python tests/e2e/run_distros.py --jobs 2
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: distro-boot-logs
