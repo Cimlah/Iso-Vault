@@ -1,0 +1,4 @@
+# Iso-Vault web UI. Boot traffic stays direct on port @@BOOT_PORT@@, so it isn't proxied here.
+@@HOSTNAME@@ {
+@@TLS_LINE@@    reverse_proxy @@UPSTREAM@@
+}

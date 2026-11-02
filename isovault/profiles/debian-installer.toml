@@ -1,0 +1,17 @@
+name = "debian-installer"
+label = "Debian installer"
+# The kernel on these ISOs only looks for a CD, so this boots Debian's netboot files instead.
+priority = 40
+menu_note = "needs internet"
+warning = "Boots Debian's netboot installer and installs from the Debian mirror, so the server and the device both need internet access."
+
+[detect]
+all = [".disk/info", "dists/"]
+any = ["install.amd/", "install.a64/", "install/"]
+none = ["live/filesystem.squashfs", "casper/"]
+
+[detect.contains]
+".disk/info" = "Debian"
+
+[boot]
+method = "debian-netboot"

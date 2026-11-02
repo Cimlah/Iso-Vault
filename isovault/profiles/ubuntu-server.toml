@@ -1,0 +1,21 @@
+name = "ubuntu-server"
+label = "Ubuntu Server"
+# Above ubuntu-casper, because the Server image needs cloud-config-url when it loads over HTTP.
+priority = 60
+
+[detect]
+all = ["casper/"]
+any = ["casper/ubuntu-server-minimal*.squashfs", "casper/*server*.squashfs"]
+
+[boot]
+method = "linux"
+kernel = ["casper/vmlinuz", "casper/hwe-vmlinuz"]
+initrd = ["casper/initrd", "casper/hwe-initrd"]
+
+[[boot.variant]]
+requires = ["nfs"]
+args = "boot=casper netboot=nfs nfsroot={server}:{nfs_path} ip=dhcp"
+
+[[boot.variant]]
+args = "ip=dhcp url={iso_url} cloud-config-url=/dev/null"
+warning = "NFS isn't available, so the whole ISO loads into RAM, in a space limited to half of it. The device needs at least {ram_gib} GiB of RAM."

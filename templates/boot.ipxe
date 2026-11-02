@@ -1,0 +1,7 @@
+#!ipxe
+# Rendered at startup with this server's address, and fetched by the first stage.
+chain http://@@SERVER_IP@@:@@BOOT_PORT@@/ipxe/menu?mac=${mac:hexhyp}&arch=${buildarch}&platform=${platform} && exit ||
+echo Iso-Vault: could not reach the boot menu at http://@@SERVER_IP@@:@@BOOT_PORT@@/
+echo Check that port @@BOOT_PORT@@ is allowed through the server's firewall.
+prompt --timeout 15000 Press any key for the iPXE shell, or wait to exit... && shell ||
+exit 1

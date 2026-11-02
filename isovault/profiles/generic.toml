@@ -1,0 +1,9 @@
+name = "generic"
+label = "Generic"
+# Matches everything, so it must stay the lowest priority.
+priority = 0
+menu_note = "may not finish booting"
+warning = "This ISO isn't a recognised OS family. It's booted as a virtual CD, which disappears once a kernel starts, so anything that looks for its media afterwards will fail."
+
+[boot]
+method = "sanboot"

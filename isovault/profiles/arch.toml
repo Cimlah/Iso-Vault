@@ -1,0 +1,15 @@
+name = "arch"
+label = "Arch Linux"
+priority = 50
+
+[detect]
+any = ["arch/boot/*/vmlinuz-linux*", "arch/boot/*/Image*"]
+
+[boot]
+method = "linux"
+kernel = ["arch/boot/{karch}/vmlinuz-linux", "arch/boot/{karch}/vmlinuz-linux*", "arch/boot/{karch}/Image*"]
+initrd = ["arch/boot/{karch}/initramfs-linux.img", "arch/boot/{karch}/initramfs-linux*.img"]
+extra_initrd = ["arch/boot/intel-ucode.img", "arch/boot/amd-ucode.img", "boot/intel-ucode.img", "boot/amd-ucode.img"]
+
+[[boot.variant]]
+args = "archisobasedir=arch archiso_http_srv={http}/ ip=dhcp net.ifnames=0 BOOTIF=01-{mac_hyphen}"

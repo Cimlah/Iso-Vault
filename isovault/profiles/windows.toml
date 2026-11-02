@@ -1,0 +1,10 @@
+name = "windows"
+label = "Windows installer"
+priority = 70
+
+[detect]
+all = ["sources/boot.wim", "boot/bcd", "boot/boot.sdi"]
+
+[boot]
+method = "windows"
+requires = ["smb"]

@@ -1,0 +1,15 @@
+# Iso-Vault web UI, for Traefik's file provider. Boot traffic stays direct on port @@BOOT_PORT@@.
+# Iso-Vault runs on host networking, so Docker labels can't describe it.
+http:
+  routers:
+    iso-vault:
+      rule: "Host(`@@HOSTNAME@@`)"
+      service: iso-vault
+      # Remove this line if your entry point isn't named websecure.
+      entryPoints: ["websecure"]
+      tls: {}
+  services:
+    iso-vault:
+      loadBalancer:
+        servers:
+          - url: "http://@@UPSTREAM@@"

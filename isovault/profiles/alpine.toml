@@ -1,0 +1,14 @@
+name = "alpine"
+label = "Alpine Linux"
+priority = 50
+
+[detect]
+all = [".alpine-release"]
+
+[boot]
+method = "linux"
+kernel = ["boot/vmlinuz-*"]
+initrd = ["boot/initramfs-*"]
+
+[[boot.variant]]
+args = "ip=dhcp modloop={http}/{glob:boot/modloop-*} alpine_repo={http}/apks"

@@ -1,0 +1,16 @@
+name = "opensuse"
+label = "openSUSE installer"
+priority = 50
+
+[detect]
+all = ["media.1/", "boot/*/root"]
+any = ["boot/*/loader/linux", "boot/*/linux"]
+none = ["LiveOS/squashfs.img"]
+
+[boot]
+method = "linux"
+kernel = ["boot/{karch}/loader/linux", "boot/{karch}/linux"]
+initrd = ["boot/{karch}/loader/initrd", "boot/{karch}/initrd"]
+
+[[boot.variant]]
+args = "install={http}/ ifcfg=*=dhcp"

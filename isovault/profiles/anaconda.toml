@@ -1,0 +1,16 @@
+name = "anaconda"
+label = "Fedora / RHEL installer"
+priority = 50
+
+[detect]
+all = ["images/pxeboot/vmlinuz", "images/pxeboot/initrd.img"]
+any = ["images/install.img", ".treeinfo"]
+none = ["LiveOS/squashfs.img"]
+
+[boot]
+method = "linux"
+kernel = ["images/pxeboot/vmlinuz"]
+initrd = ["images/pxeboot/initrd.img"]
+
+[[boot.variant]]
+args = "inst.repo={http}/ ip=dhcp rd.neednet=1"

@@ -1,0 +1,7 @@
+# Iso-Vault web UI. Boot traffic stays direct on port @@BOOT_PORT@@, so it isn't proxied here.
+# Add this rule to your existing frontend:
+#   use_backend iso_vault if { hdr(host) -i @@HOSTNAME@@ }
+backend iso_vault
+    mode http
+    http-request set-header X-Forwarded-Host %[req.hdr(host)]
+    server iso_vault @@UPSTREAM@@ check

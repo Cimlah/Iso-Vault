@@ -1,0 +1,19 @@
+name = "opensuse-net"
+label = "openSUSE network installer"
+# NET ISOs have no installation system on them. They download it, like their own boot menu does.
+priority = 45
+menu_note = "needs internet"
+warning = "This ISO downloads the installer from openSUSE's servers, so the device needs internet access."
+
+[detect]
+all = ["media.1/"]
+any = ["boot/*/loader/linux", "boot/*/linux"]
+none = ["LiveOS/squashfs.img", "boot/*/root"]
+
+[boot]
+method = "linux"
+kernel = ["boot/{karch}/loader/linux", "boot/{karch}/linux"]
+initrd = ["boot/{karch}/loader/initrd", "boot/{karch}/initrd"]
+
+[[boot.variant]]
+args = "ifcfg=*=dhcp"

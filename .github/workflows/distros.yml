@@ -1,0 +1,27 @@
+name: Boot real distro ISOs
+
+# These download gigabytes and take a long time, so they don't run on every change.
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  distros:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: docker build -t iso-vault:dev .
+      - run: python tests/e2e/run_distros.py --jobs 2
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: distro-boot-logs
+          path: tests/e2e/logs/

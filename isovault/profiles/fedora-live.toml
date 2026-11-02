@@ -1,0 +1,15 @@
+name = "fedora-live"
+label = "Fedora live"
+priority = 55
+
+[detect]
+all = ["LiveOS/squashfs.img"]
+
+[boot]
+method = "linux"
+kernel = ["images/pxeboot/vmlinuz", "boot/{karch}/loader/linux", "boot/{karch}/linux", "isolinux/vmlinuz*"]
+initrd = ["images/pxeboot/initrd.img", "boot/{karch}/loader/initrd", "boot/{karch}/initrd", "isolinux/initrd*"]
+
+[[boot.variant]]
+args = "root=live:{http}/LiveOS/squashfs.img rd.live.image rd.neednet=1 ip=dhcp"
+warning = "The live image loads into RAM, so allow up to {ram_gib} GiB of RAM."

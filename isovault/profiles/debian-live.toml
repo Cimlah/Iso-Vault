@@ -1,0 +1,20 @@
+name = "debian-live"
+label = "Debian live"
+priority = 50
+
+[detect]
+all = ["live/filesystem.squashfs"]
+any = ["live/vmlinuz*"]
+
+[boot]
+method = "linux"
+kernel = ["live/vmlinuz", "live/vmlinuz*"]
+initrd = ["live/initrd.img", "live/initrd*"]
+
+[[boot.variant]]
+requires = ["nfs"]
+args = "boot=live components netboot=nfs nfsroot={server}:{nfs_path} ip=dhcp"
+
+[[boot.variant]]
+args = "boot=live components fetch={http}/live/filesystem.squashfs ip=dhcp"
+warning = "NFS isn't available, so the live filesystem loads into RAM. Allow up to {ram_gib} GiB of RAM."
