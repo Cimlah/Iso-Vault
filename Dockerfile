@@ -44,7 +44,7 @@ ADD --checksum=sha256:b1440c6386981fb447b2f341294ec7a59546d496dff0f075b0f698c853
 
 # --- Web UI -------------------------------------------------------------------
 # The standalone output has no native dependencies, so one build serves both architectures.
-FROM --platform=$BUILDPLATFORM node:24-alpine AS web
+FROM --platform=$BUILDPLATFORM node:26-alpine AS web
 WORKDIR /web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
