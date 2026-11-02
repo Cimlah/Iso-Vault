@@ -22,6 +22,8 @@ Or from a clone of this repository:
 ./install.sh
 ```
 
+The installer downloads a ready-made image for x64 or ARM64, so a Raspberry Pi doesn't have to compile anything. From a clone, it builds the image itself if the download fails, which can take well over an hour on a Raspberry Pi 4.
+
 Then:
 
 1. Copy an ISO into the `isos` folder the installer printed. Subfolders become groups in the boot menu.
@@ -78,7 +80,7 @@ Pinned devices show a 5-second prompt, so you can still get to the menu.
 
 Windows Setup downloads its files over the network, so its installer needs a driver for the device's network card. Stock Windows ISOs often don't have one for newer cards.
 
-If yours doesn't, unpack the card's Windows driver into its own folder under `drivers/x64` (or `drivers/arm64`), and boot again. There's no need to restart anything. [docs/troubleshooting.md](docs/troubleshooting.md#windows) has the details.
+If yours doesn't, unpack the card's Windows driver into its own folder under `drivers/x64` (or `drivers/arm64`), and boot again. There's no need to restart anything. The folder needs the driver's unpacked files, such as `.inf`, `.sys` and `.cat`, because an `.exe` or `.zip` is ignored. [docs/troubleshooting.md](docs/troubleshooting.md#windows) has the details.
 
 ## Using a reverse proxy
 
@@ -95,12 +97,33 @@ Only the web UI goes through the proxy. Devices always boot directly from the se
 - **The web UI needs its own hostname behind a proxy.** Sub-paths such as `/isovault` won't work.
 - **ARM64 devices need UEFI PXE.** A Raspberry Pi needs UEFI firmware, and U-Boot boards are best effort.
 - **Windows needs a network driver in its installer.** Stock Windows ISOs often don't include one for newer network cards, so you may need to [add it](#windows-network-drivers).
+- **A full Windows install hasn't been tested.** Windows Setup has started on one physical PC, but no install has been run to the end.
 - **Windows on ARM is experimental.** It hasn't been tested, and [reports for wimboot on ARM are mixed](https://github.com/ipxe/wimboot/issues/4).
 - **Trusted networks only.** The boot port and direct UI port use plain HTTP, and the boot port has no login. Devices on your network can read the ISOs and the read-only Samba password, because they need them to boot. Never expose these ports to the internet.
 
 ## Settings
 
 The installer writes `.env`. [`.env.example`](.env.example) explains every setting. After changing one, run `docker compose up -d`.
+
+## Updating
+
+From the folder the installer set up, download the new image:
+
+```bash
+docker compose pull
+```
+
+Then restart with it:
+
+```bash
+docker compose up -d
+```
+
+Your ISOs, drivers and settings live outside the image, so they're kept. The `latest` tag follows the `main` branch. To stay on one build, set `ISO_VAULT_TAG` in `.env`.
+
+## Monitoring
+
+For a monitor such as Uptime Kuma, check `http://<server-ip>:8080/healthz`, using your `BOOT_PORT` if you changed it. It returns HTTP 200 when nginx and Iso-Vault's core are responding. It doesn't check DHCP, TFTP or your ISOs.
 
 ## Troubleshooting
 
@@ -115,10 +138,13 @@ docker logs iso-vault
 | What | Command |
 |---|---|
 | Python tests | `pytest tests/unit tests/installer` |
-| Web UI tests | `cd web && npm ci && npm test` |
+| Shell checks | `shellcheck install.sh tests/e2e/client.sh` |
+| Web UI type checks and tests | `cd web && npm ci && npm run typecheck && npm test` |
 | Container, reverse proxy and browser tests | `docker build -t iso-vault:dev . && pytest tests/integration` |
 | Boot real VMs in every DHCP mode | `python3 tests/e2e/fetch_alpine.py && python3 tests/e2e/run_e2e.py` |
 | Boot real distro ISOs | `python3 tests/e2e/run_distros.py --help` |
+
+[CI](.github/workflows/ci.yml) runs all of these on pull requests except the distro ISOs, with the container tests and VM boots running natively on both x64 and ARM64. The distro ISOs are [set to run weekly](.github/workflows/distros.yml). Every push to `main` [publishes a new `latest` image](.github/workflows/release.yml).
 
 ## License
 
