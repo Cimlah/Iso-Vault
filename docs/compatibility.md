@@ -16,13 +16,15 @@ Every combination reached Alpine Linux's login screen, with all files coming fro
 | x64 UEFI (OVMF) | Pass | Pass | Pass | Pass |
 | ARM64 UEFI (AAVMF) | Pass | Pass | Pass | Pass |
 
-All of these passed with both the ARM64 and x64 server images. The x64 image ran under emulation on an ARM64 host, so CI's native x64 runner is the better evidence once it has run.
+All of these passed in CI on both an x64 and an ARM64 runner, with the server image built natively on each. On each runner, clients of the other architecture ran under emulation. The container tests in `tests/integration/` passed on both runners too.
+
+The image published to `ghcr.io` is a separate build, with ARM64 built partly under emulation, and these tests don't run against it.
 
 The BIOS client uses QEMU's iPXE ROM, not a vendor PXE ROM such as Intel's. In `proxy` mode it therefore takes the path for iPXE clients, so the standard path for a BIOS PXE ROM in `proxy` mode hasn't been tested.
 
 ## Operating systems
 
-"Reached" is how far the test goes, which isn't a complete install.
+"Reached" is how far the test goes, which isn't a complete install. These were run by hand on an ARM64 host, and aren't part of the CI run on each pull request. The weekly `distros.yml` workflow is set up to repeat them, but it hasn't run yet.
 
 | OS | Client | Recipe | Reached | Evidence |
 |---|---|---|---|---|
