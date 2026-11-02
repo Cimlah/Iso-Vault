@@ -64,7 +64,7 @@ jobs:
       - run: docker build -t iso-vault:dev .
       - run: python tests/e2e/fetch_alpine.py
       - run: python tests/e2e/run_e2e.py --jobs 2 --timeout 1200
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: boot-logs-${{ matrix.runner }}
