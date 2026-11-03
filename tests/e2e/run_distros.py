@@ -71,6 +71,15 @@ DISTROS = (
         must_not_fetch=("filesystem.squashfs",),
     ),
     Distro(
+        name="clonezilla-x64",
+        index_url="https://downloads.sourceforge.net/project/clonezilla/clonezilla_live_stable/3.3.1-35/clonezilla-live-3.3.1-35-amd64.iso",
+        firmware="uefi-x64",
+        profile="debian-live",
+        success=("automatic login",),
+        # Its filesystem should come over NFS, so a download would mean the wrong recipe ran.
+        must_not_fetch=("filesystem.squashfs",),
+    ),
+    Distro(
         name="debian-netinst-x64",
         index_url="https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/",
         pattern=r"debian-[\d.]+-amd64-netinst\.iso",

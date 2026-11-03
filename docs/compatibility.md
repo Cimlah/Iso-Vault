@@ -33,6 +33,7 @@ The BIOS client uses QEMU's iPXE ROM, not a vendor PXE ROM such as Intel's. In `
 | Ubuntu Server 24.04.5 | ARM64 UEFI | `ubuntu-server`, over NFS | systemd started | ISO not downloaded |
 | Ubuntu Server 24.04.5 | ARM64 UEFI | `ubuntu-server`, in RAM | systemd started | Whole ISO downloaded, with 8 GB of RAM |
 | Debian Live 13.7.0 standard | x64 UEFI | `debian-live`, over NFS | systemd started | squashfs not downloaded |
+| Clonezilla 3.3.1-35 | x64 UEFI | `debian-live`, over NFS | Automatic login | squashfs not downloaded |
 | Debian netinst 13.7.0 | x64 UEFI | `debian-installer` | Installer started | Served Debian's netboot files |
 | Fedora Workstation 44 | x64 UEFI | `fedora-live` | systemd started | Fetched `squashfs.img` |
 | Fedora Everything 44 netinst | x64 UEFI | `anaconda` | Installer environment started | Fetched `install.img` |
@@ -40,6 +41,8 @@ The BIOS client uses QEMU's iPXE ROM, not a vendor PXE ROM such as Intel's. In `
 | Arch Linux (November 2026) | x64 UEFI | `arch` | systemd started | Fetched `airootfs.sfs` |
 | openSUSE Tumbleweed DVD | x64 UEFI | `opensuse` | YaST starting | Fetched `boot/x86_64/root` |
 | openSUSE Tumbleweed NET | x64 UEFI | `opensuse-net` | YaST starting | Downloaded its installer from the internet |
+
+Debian Live's result is from before `ip=dhcp` was removed from the `debian-live` recipe and `username=user` was added, so it needs running again. The Clonezilla test only watches the serial console, so it can't see whether Clonezilla's own menu starts.
 
 The generic virtual CD recipe was tested by forcing it onto Alpine's ISO. On x64 BIOS it reached ISOLINUX, and on x64 UEFI it reached GRUB. On ARM64 UEFI it continued to the kernel, then stopped with `Mounting boot media failed`, which is the [known limit](../README.md#what-boots) of this recipe.
 
@@ -50,7 +53,11 @@ One physical x64 PC, booting from a Raspberry Pi 4 on a real LAN:
 | OS | Result |
 |---|---|
 | Ubuntu | Booted |
+| Clonezilla | Booted |
+| GParted Live | Desktop started |
 | Windows 10 22H2 | Windows PE started, loaded a real Realtek driver (`rt640x64`) from the drivers folder, connected to the Samba share and started Windows Setup |
+
+Clonezilla and GParted Live both failed with `NFS over TCP not available` while the `debian-live` recipe set `ip=dhcp`, and both got past that once it was removed. GParted Live then stopped at `debian login: --noclear (automatic login)`, and its desktop started once `username=user` was added. These tests used a custom profile on the Pi, because its image didn't have the fixes yet. Clonezilla's result on this PC is from before `username=user`.
 
 The Windows test stopped once Setup had started, because going further would have erased that PC's disk. So copying Windows from the share to a disk, and booting the result, haven't been tested.
 

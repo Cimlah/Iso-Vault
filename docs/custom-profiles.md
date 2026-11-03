@@ -30,10 +30,10 @@ extra_initrd = ["live/ucode.img"]            # optional; all matches load before
 # Variants are tried in order. The first whose requirements are met is used.
 [[boot.variant]]
 requires = ["nfs"]
-args = "boot=live nfsroot={server}:{nfs_path} ip=dhcp"
+args = "boot=live nfsroot={server}:{nfs_path}"
 
 [[boot.variant]]
-args = "boot=live fetch={http}/live/rootfs.img ip=dhcp"
+args = "boot=live fetch={http}/live/rootfs.img"
 warning = "This loads into RAM. Allow {ram_gib} GiB."
 ```
 

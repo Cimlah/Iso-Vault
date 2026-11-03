@@ -1,6 +1,10 @@
 name = "debian-live"
 label = "Debian live"
 priority = 50
+# No ip=dhcp, because live-boot runs DHCP itself. Clonezilla's copy reads ip= as a static address and
+# then skips DHCP, and in Debian's copy the fetch= variant would write it to /etc/network/interfaces.
+# username=user is already live-config's default, but GParted only reads the name from here. Without
+# it, GParted's auto-login gets an empty name and its desktop never starts.
 
 [detect]
 all = ["live/filesystem.squashfs"]
@@ -13,8 +17,8 @@ initrd = ["live/initrd.img", "live/initrd*"]
 
 [[boot.variant]]
 requires = ["nfs"]
-args = "boot=live components netboot=nfs nfsroot={server}:{nfs_path} ip=dhcp"
+args = "boot=live components username=user netboot=nfs nfsroot={server}:{nfs_path}"
 
 [[boot.variant]]
-args = "boot=live components fetch={http}/live/filesystem.squashfs ip=dhcp"
+args = "boot=live components username=user fetch={http}/live/filesystem.squashfs"
 warning = "NFS isn't available, so the live filesystem loads into RAM. Allow up to {ram_gib} GiB of RAM."
