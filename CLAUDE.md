@@ -71,6 +71,8 @@ Everything runs in one privileged container on host networking, because DHCP nee
 - `run()` removes secrets from the environment before starting services, and only the web UI gets what it needs back. `test_services_dont_inherit_secrets` checks this.
 - In integration tests, list a volume fixture before `stack` in the test's parameters, so the volume outlives the container.
 - The test VMs use a network card that Windows PE has no driver for, so Windows Setup can only be tested on physical hardware.
+- Clonezilla patches `live-boot` so that any `ip=` means a static address and DHCP never runs, so the `debian-live` profile leaves it out. It looks like a network fault: `NFS over TCP not available` and `Network is unreachable`, with a working card and DHCP server.
+- GParted Live takes its auto-login name only from `username=`, so the `debian-live` profile sets it, even though that's live-config's default. Without it, the console stops at `debian login: --noclear (automatic login)` and the desktop never starts.
 
 ## Docs
 
@@ -84,7 +86,7 @@ Everything runs in one privileged container on host networking, because DHCP nee
 
 ## Trying a local build on a Raspberry Pi
 
-Compiling on a Pi 4 takes well over an hour, so build on a faster machine and send the image over:
+Compiling on a Raspberry Pi can take well over an hour, so build on a faster machine and send the image over:
 
 ```bash
 docker build --platform linux/arm64 -t ghcr.io/cimlah/iso-vault:latest .

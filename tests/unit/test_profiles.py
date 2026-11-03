@@ -227,6 +227,18 @@ def test_debian_live_resolves_versioned_filenames(build_tree, profiles):
     assert plan.initrds == ["live/initrd.img-6.12.0-amd64"]
 
 
+@pytest.mark.parametrize("features", [frozenset({"nfs"}), frozenset()])
+def test_debian_live_leaves_dhcp_to_live_boot(build_tree, profiles, features):
+    _, plan = plan_for(build_tree, profiles, DEBIAN_LIVE, context(features=features))
+    assert "ip=" not in plan.args
+
+
+@pytest.mark.parametrize("features", [frozenset({"nfs"}), frozenset()])
+def test_debian_live_names_the_live_user(build_tree, profiles, features):
+    _, plan = plan_for(build_tree, profiles, DEBIAN_LIVE, context(features=features))
+    assert "username=user" in plan.args.split()
+
+
 def test_arch_puts_microcode_first(build_tree, profiles):
     _, plan = plan_for(build_tree, profiles, ARCH)
     assert plan.initrds == [

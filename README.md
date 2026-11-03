@@ -42,7 +42,7 @@ Network booting can't work quite like Ventoy. An ISO can be presented as a virtu
 |---|---|---|---|
 | Ubuntu live | Ubuntu Desktop, Mint, Pop!_OS, Zorin | Over NFS | |
 | Ubuntu Server | Ubuntu Server | Over NFS | |
-| Debian live | Debian Live, Kali | Over NFS | |
+| Debian live | Debian Live, Kali, Clonezilla, GParted Live | Over NFS | |
 | Debian installer | Debian netinst, DVD | Debian's netboot files | Internet access |
 | Fedora / RHEL installers | Fedora Server, RHEL, Alma, Rocky | Over HTTP | |
 | Fedora live | Fedora Workstation and spins | Live image in RAM | RAM for the image |
