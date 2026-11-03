@@ -86,7 +86,7 @@ Everything runs in one privileged container on host networking, because DHCP nee
 
 ## Trying a local build on a Raspberry Pi
 
-Compiling on a Pi 4 takes well over an hour, so build on a faster machine and send the image over:
+Compiling on a Raspberry Pi can take well over an hour, so build on a faster machine and send the image over:
 
 ```bash
 docker build --platform linux/arm64 -t ghcr.io/cimlah/iso-vault:latest .

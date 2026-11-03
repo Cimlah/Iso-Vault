@@ -48,16 +48,16 @@ The generic virtual CD recipe was tested by forcing it onto Alpine's ISO. On x64
 
 ## Physical hardware
 
-One physical x64 PC, booting from a Raspberry Pi 4 on a real LAN:
+One physical x64 PC, booting from an ARM64 server on a real LAN:
 
 | OS | Result |
 |---|---|
 | Ubuntu | Booted |
 | Clonezilla | Booted |
 | GParted Live | Desktop started |
-| Windows 10 22H2 | Windows PE started, loaded a real Realtek driver (`rt640x64`) from the drivers folder, connected to the Samba share and started Windows Setup |
+| Windows 10 22H2 | Windows PE started, loaded a real network driver from the drivers folder, connected to the Samba share and started Windows Setup |
 
-Clonezilla and GParted Live both failed with `NFS over TCP not available` while the `debian-live` recipe set `ip=dhcp`, and both got past that once it was removed. GParted Live then stopped at `debian login: --noclear (automatic login)`, and its desktop started once `username=user` was added. These tests used a custom profile on the Pi, because its image didn't have the fixes yet. Clonezilla's result on this PC is from before `username=user`.
+Clonezilla and GParted Live both failed with `NFS over TCP not available` while the `debian-live` recipe set `ip=dhcp`, and both got past that once it was removed. GParted Live then stopped at `debian login: --noclear (automatic login)`, and its desktop started once `username=user` was added. These tests used a custom profile on the server, because its image didn't have the fixes yet. Clonezilla's result on this PC is from before `username=user`.
 
 The Windows test stopped once Setup had started, because going further would have erased that PC's disk. So copying Windows from the share to a disk, and booting the result, haven't been tested.
 
