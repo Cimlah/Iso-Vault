@@ -92,7 +92,7 @@ Only the web UI goes through the proxy. Devices always boot directly from the se
 
 - **Not every ISO will boot.** Unrecognised ISOs are booted as a virtual CD, which often stops once the kernel starts.
 - **Secure Boot must be off**, because this build of iPXE isn't signed.
-- **The server must be on the same network segment as the devices**, unless your network relays DHCP.
+- **The server must be on the same network segment as the devices**, unless your network relays DHCP or your router points them at it (`upstream` mode).
 - **A reverse proxy only covers the web UI.** Devices must be able to reach the server's LAN address on the boot port.
 - **The web UI needs its own hostname behind a proxy.** Sub-paths such as `/isovault` won't work.
 - **ARM64 devices need UEFI PXE.** A Raspberry Pi needs UEFI firmware, and U-Boot boards are best effort.
@@ -120,6 +120,8 @@ docker compose up -d
 ```
 
 Your ISOs, drivers and settings live outside the image, so they're kept. The `latest` tag follows the `main` branch. To stay on one build, set `ISO_VAULT_TAG` in `.env`.
+
+A [custom profile](docs/custom-profiles.md) with the same name as a built-in one keeps replacing it after an update, so you won't get fixes to that built-in profile until you delete yours.
 
 ## Monitoring
 

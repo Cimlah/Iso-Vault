@@ -72,17 +72,20 @@ Everything runs in one privileged container on host networking, because DHCP nee
 - In integration tests, list a volume fixture before `stack` in the test's parameters, so the volume outlives the container.
 - The test VMs use a network card that Windows PE has no driver for, so Windows Setup can only be tested on physical hardware.
 - Clonezilla patches `live-boot` so that any `ip=` means a static address and DHCP never runs, so the `debian-live` profile leaves it out. It looks like a network fault: `NFS over TCP not available` and `Network is unreachable`, with a working card and DHCP server.
-- GParted Live takes its auto-login name only from `username=`, so the `debian-live` profile sets it, even though that's live-config's default. Without it, the console stops at `debian login: --noclear (automatic login)` and the desktop never starts.
+- GParted Live takes its auto-login name only from `username=`, so the `debian-live` profile sets it, even though that's live-config's default. Without it, the console stops at `debian login: --noclear (automatic login)` and the desktop never starts. Clonezilla's squashfs also has a copy of GParted's scripts, under `usr/share/drbl/setup/files/gparted/`.
 
 ## Docs
 
 `docs/compatibility.md` is the record of what has been tested. Only list something there after it has actually passed, and say how far it got. If a test on real hardware changes what's proven, update it.
 
+This repo is public. Describe physical test hardware in general terms, and keep real IP addresses, MAC addresses, hostnames and hardware models from a test setup out of docs, commit messages and PR text.
+
 ## CI and releases
 
 - `ci.yml` runs on pull requests and on `main`. The container tests and VM boots run natively on `ubuntu-24.04` and `ubuntu-24.04-arm`.
-- `release.yml` publishes a multi-architecture image to `ghcr.io/cimlah/iso-vault` on `v*` tags and on every push to `main`, including merged Dependabot PRs. `latest` follows `main`, and the tests don't run against this build.
+- `release.yml` publishes a multi-architecture image to `ghcr.io/cimlah/iso-vault` on `v*` tags and on every push to `main`, including merged Dependabot PRs and docs-only changes. `latest` follows `main`, and the tests don't run against this build.
 - `distros.yml` runs the real ISOs weekly, or on demand.
+- `main` has no required checks, so GitHub's auto-merge won't wait for CI. Before merging, check that the run on the PR's latest commit has finished.
 
 ## Trying a local build on a Raspberry Pi
 
@@ -94,3 +97,5 @@ docker save ghcr.io/cimlah/iso-vault:latest | gzip | ssh <user>@<pi> 'gunzip | d
 ```
 
 Then run `docker compose up -d --no-build` on the Pi. Don't run `./install.sh` or `docker compose pull` there, because they'd replace it with the published image.
+
+Trying different boot options doesn't need a new image. Copy the profile to `data/profiles.d/` on the Pi, edit it, and run `docker compose restart`. A profile with the same `name` keeps replacing the built-in one, so delete it once the image has the fix.
